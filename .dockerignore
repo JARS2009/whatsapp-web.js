@@ -1,0 +1,8 @@
+# Solo entra a la imagen lo necesario para correr el servicio
+*
+!package.json
+!index.js
+!src
+!service
+service/node_modules
+service/data

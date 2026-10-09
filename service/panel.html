@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>WhatsApp Panel</title>
+        <style>
+            :root {
+                --bg: #f4f6f8;
+                --card: #fff;
+                --text: #1c2430;
+                --muted: #64707d;
+                --border: #e2e6ea;
+                --accent: #1fa855;
+                --accent-text: #fff;
+                --danger: #d93a3a;
+                --warn: #c98a00;
+                --info: #2f6fdb;
+                --soft: #eef7f1;
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: #0f1418;
+                    --card: #182027;
+                    --text: #e7ecef;
+                    --muted: #93a0ab;
+                    --border: #27313a;
+                    --accent: #25c464;
+                    --accent-text: #08130c;
+                    --danger: #ef5b5b;
+                    --warn: #e6b13a;
+                    --info: #5b93f0;
+                    --soft: #12261a;
+                }
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                background: var(--bg);
+                color: var(--text);
+                font:
+                    15px/1.5 system-ui,
+                    -apple-system,
+                    'Segoe UI',
+                    Roboto,
+                    sans-serif;
+            }
+            header {
+                background: var(--card);
+                border-bottom: 1px solid var(--border);
+                padding: 14px 16px;
+            }
+            header div,
+            main {
+                max-width: 860px;
+                margin: 0 auto;
+            }
+            header div {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+            h1 {
+                font-size: 17px;
+                margin: 0;
+            }
+            h2 {
+                font-size: 15px;
+                margin: 0 0 12px;
+            }
+            main {
+                padding: 24px 16px 48px;
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                gap: 16px;
+            }
+            .card {
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                padding: 20px;
+                min-width: 0;
+            }
+            .muted {
+                color: var(--muted);
+                font-size: 13px;
+            }
+            .pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 13px;
+                font-weight: 600;
+                padding: 4px 10px;
+                border-radius: 999px;
+                border: 1px solid var(--border);
+            }
+            .pill::before {
+                content: '';
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: currentColor;
+            }
+            .s-ready {
+                color: var(--accent);
+            }
+            .s-error,
+            .s-unlinked {
+                color: var(--danger);
+            }
+            .s-qr,
+            .s-code {
+                color: var(--warn);
+            }
+            .s-starting,
+            .s-syncing {
+                color: var(--info);
+            }
+            .s-stopped {
+                color: var(--muted);
+            }
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+                gap: 12px;
+            }
+            .stat {
+                border: 1px solid var(--border);
+                border-radius: 10px;
+                padding: 10px 12px;
+                min-width: 0;
+            }
+            .stat .label {
+                font-size: 12px;
+                color: var(--muted);
+            }
+            .stat .value {
+                font-size: 18px;
+                font-weight: 700;
+                overflow-wrap: anywhere;
+            }
+            .stat .sub {
+                font-size: 12px;
+                color: var(--muted);
+            }
+            .meter {
+                height: 6px;
+                background: var(--border);
+                border-radius: 3px;
+                overflow: hidden;
+                margin-top: 6px;
+            }
+            .meter span {
+                display: block;
+                height: 100%;
+                background: var(--accent);
+            }
+            .note {
+                font-size: 13px;
+                background: var(--soft);
+                border-radius: 8px;
+                padding: 10px 12px;
+                margin-top: 14px;
+            }
+            .actions {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                margin-top: 14px;
+            }
+            button {
+                font: inherit;
+                font-weight: 600;
+                padding: 9px 14px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+                background: var(--card);
+                color: var(--text);
+                cursor: pointer;
+            }
+            button.primary {
+                background: var(--accent);
+                border-color: var(--accent);
+                color: var(--accent-text);
+            }
+            button.danger {
+                color: var(--danger);
+            }
+            button:disabled {
+                opacity: 0.55;
+                cursor: not-allowed;
+            }
+            input,
+            textarea {
+                width: 100%;
+                min-width: 0;
+                font: inherit;
+                padding: 9px 12px;
+                border-radius: 8px;
+                border: 1px solid var(--border);
+                background: var(--bg);
+                color: var(--text);
+            }
+            textarea {
+                min-height: 80px;
+                resize: vertical;
+            }
+            label {
+                display: grid;
+                gap: 6px;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            form {
+                display: grid;
+                gap: 12px;
+            }
+            .row {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .row input {
+                flex: 1 1 220px;
+            }
+            .center {
+                display: grid;
+                justify-items: center;
+                text-align: center;
+                gap: 12px;
+            }
+            .qr {
+                width: min(280px, 100%);
+                aspect-ratio: 1;
+                display: grid;
+                place-items: center;
+                background: #fff;
+                border: 1px dashed var(--border);
+                border-radius: 12px;
+                color: #64707d;
+                font-size: 13px;
+                overflow: hidden;
+            }
+            .qr img {
+                width: 100%;
+            }
+            .code {
+                font:
+                    700 30px ui-monospace,
+                    Menlo,
+                    Consolas,
+                    monospace;
+                letter-spacing: 6px;
+                background: var(--soft);
+                border-radius: 10px;
+                padding: 10px 18px;
+            }
+            .msg {
+                font-size: 14px;
+                border-radius: 8px;
+                padding: 9px 12px;
+                background: var(--soft);
+                overflow-wrap: anywhere;
+            }
+            .msg.err {
+                background: color-mix(in srgb, var(--danger) 12%, transparent);
+                color: var(--danger);
+            }
+            pre {
+                background: var(--bg);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 12px;
+                font-size: 12px;
+                overflow-x: auto;
+                margin: 8px 0 0;
+            }
+            code {
+                font-family: ui-monospace, Menlo, Consolas, monospace;
+            }
+            [hidden] {
+                display: none !important;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div>
+                <h1>WhatsApp · Panel interno</h1>
+                <span id="status" class="pill s-stopped">Cargando…</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Sesión -->
+            <section class="card" id="session" hidden>
+                <h2 id="who">—</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="label">Sesión vinculada hace</div>
+                        <div class="value" id="linked-ago">—</div>
+                        <div class="sub" id="linked-at"></div>
+                    </div>
+                    <div class="stat">
+                        <div class="label">Conectada sin cortes</div>
+                        <div class="value" id="ready-ago">—</div>
+                        <div class="sub" id="next-restart"></div>
+                    </div>
+                    <div class="stat">
+                        <div class="label">Mensajes enviados</div>
+                        <div class="value" id="sent-total">0</div>
+                        <div class="sub" id="sent-detail"></div>
+                    </div>
+                    <div class="stat">
+                        <div class="label">Memoria</div>
+                        <div class="value" id="mem">—</div>
+                        <div class="meter" id="mem-meter" hidden>
+                            <span></span>
+                        </div>
+                        <div class="sub" id="mem-detail"></div>
+                    </div>
+                </div>
+                <div class="note">
+                    La sesión dura mientras el teléfono principal se conecte a
+                    internet al menos una vez cada
+                    <b>14 días</b>. Si lo desvinculas desde el teléfono, habrá
+                    que escanear el QR otra vez.
+                    <span id="last-disconnect"></span>
+                </div>
+                <div class="actions">
+                    <button id="btn-restart">Reiniciar navegador</button>
+                    <button class="danger" id="btn-logout">
+                        Desvincular número
+                    </button>
+                </div>
+            </section>
+
+            <!-- Vinculación -->
+            <section class="card" id="link" hidden>
+                <h2>Vincular número</h2>
+                <div class="center" id="link-qr">
+                    <div class="qr" id="qr">
+                        <span>Pulsa “Generar QR”</span>
+                    </div>
+                    <div class="code" id="code" hidden></div>
+                    <div class="muted" id="link-help">
+                        En el teléfono:
+                        <b
+                            >Ajustes → Dispositivos vinculados → Vincular un
+                            dispositivo</b
+                        >.
+                    </div>
+                    <button class="primary" id="btn-qr">Generar QR</button>
+                </div>
+                <form id="pair-form" class="row" style="margin-top: 16px">
+                    <input
+                        id="pair-phone"
+                        inputmode="numeric"
+                        placeholder="O vincula con código: 51961991613"
+                    />
+                    <button type="submit">Pedir código</button>
+                </form>
+            </section>
+
+            <div id="error" class="msg err" hidden></div>
+
+            <!-- Prueba de envío -->
+            <section class="card" id="test" hidden>
+                <h2>Probar envío</h2>
+                <form id="test-form">
+                    <label>
+                        Para
+                        <input
+                            id="test-to"
+                            required
+                            placeholder="51961991613"
+                        />
+                    </label>
+                    <label>
+                        Mensaje
+                        <span class="muted">(con PDF es la descripción)</span>
+                        <textarea id="test-text"></textarea>
+                    </label>
+                    <label>
+                        PDF <span class="muted" id="pdf-limit">(opcional)</span>
+                        <input
+                            id="test-pdf"
+                            type="file"
+                            accept="application/pdf,.pdf"
+                        />
+                    </label>
+                    <div>
+                        <button class="primary" type="submit" id="btn-test">
+                            Enviar
+                        </button>
+                    </div>
+                    <div class="msg" id="test-result" hidden></div>
+                </form>
+            </section>
+
+            <!-- API -->
+            <section class="card" id="api">
+                <h2>API</h2>
+                <div class="row">
+                    <input id="token" type="password" readonly />
+                    <button id="btn-token-show">Mostrar</button>
+                    <button id="btn-token-copy">Copiar</button>
+                </div>
+                <pre><code id="curl"></code></pre>
+            </section>
+        </main>
+
+        <script>
+            const $ = (id) => document.getElementById(id);
+            const LABELS = {
+                stopped: 'Detenido',
+                starting: 'Iniciando',
+                qr: 'Esperando escaneo',
+                code: 'Esperando código',
+                syncing: 'Sincronizando',
+                ready: 'Conectado',
+                unlinked: 'Sin vincular',
+                error: 'Reconectando',
+            };
+            let info = null;
+
+            function duration(ms) {
+                if (ms == null || ms < 0) return '—';
+                const s = Math.floor(ms / 1000);
+                const d = Math.floor(s / 86400);
+                const h = Math.floor((s % 86400) / 3600);
+                const m = Math.floor((s % 3600) / 60);
+                if (d) return `${d} d ${h} h`;
+                if (h) return `${h} h ${m} min`;
+                if (m) return `${m} min`;
+                return `${s} s`;
+            }
+            const dateTime = (t) =>
+                t
+                    ? new Date(t).toLocaleString('es', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                      })
+                    : '';
+
+            async function post(url, body) {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body || {}),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok)
+                    throw new Error(data.error || 'Error ' + res.status);
+                return data;
+            }
+
+            async function action(btn, fn) {
+                btn.disabled = true;
+                $('error').hidden = true;
+                try {
+                    return await fn();
+                } catch (err) {
+                    $('error').hidden = false;
+                    $('error').textContent = err.message;
+                } finally {
+                    btn.disabled = false;
+                }
+            }
+
+            function render() {
+                const s = info;
+                const ready = s.status === 'ready';
+                $('status').textContent = LABELS[s.status] || s.status;
+                $('status').className = 'pill s-' + s.status;
+                $('session').hidden = !ready;
+                $('test').hidden = !ready;
+                $('link').hidden = ready || s.status === 'syncing';
+
+                const m = s.meta;
+                $('who').textContent = m.number
+                    ? `+${m.number}${m.name ? ' · ' + m.name : ''}`
+                    : '—';
+                $('linked-at').textContent = m.linkedAt
+                    ? 'desde ' + dateTime(m.linkedAt)
+                    : '';
+                $('next-restart').textContent =
+                    s.readySince && s.config.restartEveryHours > 0
+                        ? 'reinicio de mantenimiento ' +
+                          dateTime(
+                              s.readySince +
+                                  s.config.restartEveryHours * 3600000,
+                          )
+                        : '';
+                const sent = m.sent;
+                $('sent-total').textContent = sent.text + sent.pdf;
+                $('sent-detail').textContent =
+                    `${sent.text} textos · ${sent.pdf} PDF · ${sent.failed} fallidos` +
+                    (s.pending ? ` · ${s.pending} en cola` : '');
+                $('last-disconnect').textContent = m.lastDisconnect
+                    ? ` Último corte: ${m.lastDisconnect.reason} (${dateTime(m.lastDisconnect.at)}).`
+                    : '';
+
+                const mem = s.memory;
+                $('mem').textContent =
+                    mem.containerMb != null
+                        ? `${mem.containerMb} MB`
+                        : `${mem.totalMb} MB`;
+                const meter = $('mem-meter');
+                meter.hidden = !mem.containerLimitMb;
+                if (mem.containerLimitMb) {
+                    const pct = Math.min(
+                        100,
+                        (mem.containerMb / mem.containerLimitMb) * 100,
+                    );
+                    meter.firstElementChild.style.width = pct + '%';
+                    meter.firstElementChild.style.background =
+                        pct > 85
+                            ? 'var(--danger)'
+                            : pct > 70
+                              ? 'var(--warn)'
+                              : 'var(--accent)';
+                }
+                $('mem-detail').textContent =
+                    (mem.containerLimitMb
+                        ? `de ${mem.containerLimitMb} MB · `
+                        : '') +
+                    `Node ${mem.nodeMb} MB · página ${mem.browserHeapMb ?? '—'} MB`;
+
+                // Vinculación
+                const qr = $('qr');
+                if (s.qrImage) {
+                    qr.replaceChildren(
+                        Object.assign(document.createElement('img'), {
+                            src: s.qrImage,
+                            alt: 'QR',
+                        }),
+                    );
+                } else {
+                    const text =
+                        s.status === 'starting'
+                            ? 'Iniciando…'
+                            : s.status === 'code'
+                              ? 'Usa el código de abajo'
+                              : 'Pulsa “Generar QR”';
+                    qr.replaceChildren(
+                        Object.assign(document.createElement('span'), {
+                            textContent: text,
+                        }),
+                    );
+                }
+                $('code').hidden = !s.pairingCode;
+                if (s.pairingCode) {
+                    $('code').textContent =
+                        s.pairingCode.slice(0, 4) +
+                        '-' +
+                        s.pairingCode.slice(4);
+                    $('link-help').innerHTML =
+                        'En el teléfono: <b>Dispositivos vinculados → Vincular con número de teléfono</b> e ingresa el código.';
+                }
+                $('btn-qr').disabled = ['starting', 'qr'].includes(s.status);
+
+                if (s.lastError && !ready) {
+                    $('error').hidden = false;
+                    $('error').textContent = s.lastError;
+                } else if (ready) {
+                    $('error').hidden = true;
+                }
+
+                $('pdf-limit').textContent =
+                    `(opcional, máx. ${s.config.maxPdfMb} MB)`;
+                if ($('token').value !== s.token) {
+                    $('token').value = s.token;
+                    $('curl').textContent = [
+                        `curl -X POST http://localhost:${s.config.apiPort}/v1/messages \\`,
+                        `  -H "Authorization: Bearer $API_TOKEN" \\`,
+                        `  -H "Content-Type: application/json" \\`,
+                        `  -d '{"to":"51961991613","text":"Hola","pdf":{"url":"https://…/factura.pdf","filename":"factura.pdf"}}'`,
+                    ].join('\n');
+                }
+                tick();
+            }
+
+            function tick() {
+                if (!info) return;
+                const now = Date.now();
+                $('linked-ago').textContent = info.meta.linkedAt
+                    ? duration(now - info.meta.linkedAt)
+                    : '—';
+                $('ready-ago').textContent = info.readySince
+                    ? duration(now - info.readySince)
+                    : '—';
+            }
+            setInterval(tick, 1000);
+
+            $('btn-qr').addEventListener('click', (e) =>
+                action(e.currentTarget, () => post('/link/qr')),
+            );
+            $('pair-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                action(e.submitter, () =>
+                    post('/link/phone', { phone: $('pair-phone').value }),
+                );
+            });
+            $('btn-restart').addEventListener('click', (e) =>
+                action(e.currentTarget, () => post('/restart')),
+            );
+            $('btn-logout').addEventListener('click', (e) => {
+                if (
+                    confirm(
+                        '¿Desvincular el número? Habrá que escanear el QR de nuevo.',
+                    )
+                ) {
+                    action(e.currentTarget, () => post('/logout'));
+                }
+            });
+            $('btn-token-show').addEventListener('click', (e) => {
+                const t = $('token');
+                t.type = t.type === 'password' ? 'text' : 'password';
+                e.currentTarget.textContent =
+                    t.type === 'password' ? 'Mostrar' : 'Ocultar';
+            });
+            $('btn-token-copy').addEventListener('click', async (e) => {
+                await navigator.clipboard.writeText($('token').value);
+                e.currentTarget.textContent = 'Copiado';
+                setTimeout(
+                    () => (e.currentTarget.textContent = 'Copiar'),
+                    1500,
+                );
+            });
+
+            $('test-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const out = $('test-result');
+                const btn = $('btn-test');
+                btn.disabled = true;
+                out.hidden = false;
+                out.className = 'msg';
+                out.textContent = 'Enviando…';
+                try {
+                    const body = {
+                        to: $('test-to').value,
+                        text: $('test-text').value,
+                    };
+                    const file = $('test-pdf').files[0];
+                    if (file) {
+                        if (file.size > info.config.maxPdfMb * 1048576) {
+                            throw new Error(
+                                `El PDF supera ${info.config.maxPdfMb} MB`,
+                            );
+                        }
+                        const dataUrl = await new Promise((resolve, reject) => {
+                            const r = new FileReader();
+                            r.onload = () => resolve(r.result);
+                            r.onerror = () =>
+                                reject(new Error('No se pudo leer el PDF'));
+                            r.readAsDataURL(file);
+                        });
+                        body.pdfBase64 = String(dataUrl).split(',')[1];
+                        body.filename = file.name;
+                    }
+                    const r = await post('/test', body);
+                    out.textContent = `✓ Enviado (id ${r.id})`;
+                    $('test-text').value = '';
+                    $('test-pdf').value = '';
+                } catch (err) {
+                    out.className = 'msg err';
+                    out.textContent = err.message;
+                } finally {
+                    btn.disabled = false;
+                }
+            });
+
+            function connect() {
+                const es = new EventSource('/events');
+                es.onmessage = (e) => {
+                    info = JSON.parse(e.data);
+                    render();
+                };
+                es.onerror = () => {
+                    es.close();
+                    setTimeout(connect, 3000);
+                };
+            }
+            connect();
+        </script>
+    </body>
+</html>

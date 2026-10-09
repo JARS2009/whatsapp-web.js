@@ -17,7 +17,34 @@ async function exposeFunctionIfAbsent(page, name, fn) {
     if (exist) {
         return;
     }
-    await page.exposeFunction(name, fn);
+    try {
+        await page.exposeFunction(name, fn);
+    } catch (err) {
+        // Puppeteer installs the binding in every frame of the page. If a
+        // child frame (WhatsApp Web opens and closes some while loading) goes
+        // away meanwhile, exposeFunction rejects with TargetCloseError even
+        // though the main frame got the binding. Swallowing it only when the
+        // binding is really there keeps the 'ready' event from being lost.
+        if (!isTargetCloseError(err) || page.isClosed()) throw err;
+        const installed = await page
+            .waitForFunction(
+                (name) => typeof window[name] === 'function',
+                { timeout: 2000, polling: 100 },
+                name,
+            )
+            .then(() => true)
+            .catch(() => false);
+        if (installed) return;
+        await page.removeExposedFunction(name).catch(() => {});
+        await page.exposeFunction(name, fn);
+    }
+}
+
+function isTargetCloseError(err) {
+    return (
+        err?.name === 'TargetCloseError' ||
+        /Target closed/.test(err?.message || '')
+    );
 }
 
 module.exports = { exposeFunctionIfAbsent };

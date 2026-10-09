@@ -59,6 +59,7 @@ export default [
             'docs',
             '*.min.js',
             '.wa-version',
+            'service/data',
             '.wwebjs_auth',
             '.wwebjs_cache',
         ],

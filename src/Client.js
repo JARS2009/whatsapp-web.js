@@ -36,6 +36,11 @@ const {
 const NoAuth = require('./authStrategies/NoAuth');
 const { exposeFunctionIfAbsent } = require('./util/Puppeteer');
 
+// Poll waits on a timer instead of requestAnimationFrame (puppeteer's
+// default): rAF stops firing when Chrome is not producing frames, e.g. in
+// headless mode on a machine whose display is asleep.
+const WAIT_POLLING_MS = 250;
+
 /**
  * Starting point for interacting with the WhatsApp Web API
  * @extends {EventEmitter}
@@ -122,6 +127,7 @@ class Client extends EventEmitter {
             await this.pupPage
                 .waitForFunction('window.Debug?.VERSION != undefined', {
                     timeout: authTimeout,
+                    polling: WAIT_POLLING_MS,
                     signal: abort.signal,
                 })
                 .catch((err) => {
@@ -153,7 +159,7 @@ class Client extends EventEmitter {
                         state,
                     };
                 },
-                { timeout: authTimeout },
+                { timeout: authTimeout, polling: WAIT_POLLING_MS },
             );
             const needAuthentication = await needAuthHandle.jsonValue();
 
@@ -326,7 +332,7 @@ class Client extends EventEmitter {
                         await this.pupPage
                             .waitForFunction(
                                 'typeof window.WWebJS !== "undefined"',
-                                { timeout: 30000 },
+                                { timeout: 30000, polling: WAIT_POLLING_MS },
                             )
                             .catch(() => {
                                 throw 'ready timeout';

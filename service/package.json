@@ -1,0 +1,12 @@
+{
+    "name": "whatsapp-service",
+    "private": true,
+    "description": "API de envío (texto + PDF) y panel interno para un número de WhatsApp",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "qrcode": "1.5.4"
+    }
+}

@@ -1,0 +1,35 @@
+services:
+    whatsapp:
+        build: .
+        image: whatsapp-service
+        container_name: whatsapp
+        restart: unless-stopped
+        # Recoge procesos zombis de Chromium
+        init: true
+        environment:
+            # Si no se define, se genera uno y se guarda en el volumen (lo ves en el panel)
+            API_TOKEN: ${API_TOKEN:-}
+            # Contraseña opcional para el panel, además del túnel SSH
+            PANEL_USER: ${PANEL_USER:-}
+            PANEL_PASSWORD: ${PANEL_PASSWORD:-}
+            MAX_PDF_MB: ${MAX_PDF_MB:-16}
+            RESTART_EVERY_HOURS: ${RESTART_EVERY_HOURS:-24}
+        ports:
+            # Ambos solo en localhost del VPS: nada queda expuesto a internet.
+            # API: para tus apps del mismo servidor (o detrás de un proxy con HTTPS)
+            - '127.0.0.1:3000:3000'
+            # Panel: entra con un túnel SSH (ver service/README.md)
+            - '127.0.0.1:3001:3001'
+        volumes:
+            # Sesión de WhatsApp, token y estadísticas: no borrar
+            - whatsapp-data:/data
+        mem_limit: 1g
+        memswap_limit: 1g
+        logging:
+            driver: json-file
+            options:
+                max-size: 10m
+                max-file: '3'
+
+volumes:
+    whatsapp-data:
