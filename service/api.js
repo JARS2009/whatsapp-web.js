@@ -4,7 +4,8 @@
  * API para que tus sistemas envíen mensajes. Requiere el token en
  * `Authorization: Bearer <API_TOKEN>`.
  *
- *   POST /v1/messages        { to, text }                          → texto
+ *   POST /v1/messages        { to, text, format? }                  → texto
+ *                            format: "whatsapp" (default) o "html" (ver format.js)
  *                            { to, text?, pdf: { base64, filename } } → PDF
  *                            { to, text?, pdf: { url, filename } }    → PDF por URL
  *   GET  /v1/messages/:id    estado de entrega (sent/delivered/read)
@@ -16,14 +17,14 @@ const http = require('http');
 const { HttpError, log } = require('./whatsapp');
 const { sendJson, readJson, safeEqual, handle } = require('./http');
 
-function createApiServer(wa, { token, maxPdfBytes }) {
+function createApiServer(wa, { apiKey, maxPdfBytes }) {
     // base64 ocupa ~4/3 del archivo, más margen para el resto del JSON
     const maxBody = Math.ceil(maxPdfBytes * 1.4) + 64 * 1024;
 
     function authorize(req) {
         const header = req.headers.authorization || '';
         const given = header.startsWith('Bearer ') ? header.slice(7) : '';
-        if (!given || !safeEqual(given, token)) {
+        if (!given || !safeEqual(given, apiKey.value)) {
             throw new HttpError(401, 'Token inválido');
         }
     }
@@ -67,6 +68,7 @@ function createApiServer(wa, { token, maxPdfBytes }) {
                 const result = await wa.send({
                     to: body.to,
                     text: body.text,
+                    format: body.format,
                     pdf,
                 });
                 return sendJson(res, 201, result);

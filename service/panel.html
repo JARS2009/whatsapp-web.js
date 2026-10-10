@@ -196,7 +196,8 @@
                 cursor: not-allowed;
             }
             input,
-            textarea {
+            textarea,
+            select {
                 width: 100%;
                 min-width: 0;
                 font: inherit;
@@ -218,7 +219,12 @@
             }
             form {
                 display: grid;
+                grid-template-columns: minmax(0, 1fr);
                 gap: 12px;
+            }
+            details,
+            label {
+                min-width: 0;
             }
             .row {
                 display: flex;
@@ -282,6 +288,25 @@
             }
             code {
                 font-family: ui-monospace, Menlo, Consolas, monospace;
+            }
+            .cheat-wrap {
+                overflow-x: auto;
+            }
+            .cheat {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 13px;
+                margin-top: 8px;
+            }
+            .cheat th,
+            .cheat td {
+                text-align: left;
+                padding: 6px 8px;
+                border-bottom: 1px solid var(--border);
+                vertical-align: top;
+            }
+            details summary {
+                cursor: pointer;
             }
             [hidden] {
                 display: none !important;
@@ -384,8 +409,116 @@
                     <label>
                         Mensaje
                         <span class="muted">(con PDF es la descripción)</span>
-                        <textarea id="test-text"></textarea>
+                        <textarea
+                            id="test-text"
+                            placeholder="Hola *Ana* 👋, tu pedido está _listo_ ✅"
+                        ></textarea>
                     </label>
+                    <label>
+                        Formato
+                        <select id="test-format">
+                            <option value="whatsapp">
+                                WhatsApp (*negrita* _cursiva_ ~tachado~)
+                            </option>
+                            <option value="html">
+                                HTML (&lt;b&gt; &lt;i&gt; &lt;u&gt; &lt;s&gt;
+                                &lt;br&gt; &lt;ul&gt;…)
+                            </option>
+                        </select>
+                    </label>
+                    <details>
+                        <summary class="muted">Guía rápida de formato</summary>
+                        <div class="cheat-wrap">
+                            <table class="cheat">
+                                <tr>
+                                    <th>Estilo</th>
+                                    <th>format "whatsapp"</th>
+                                    <th>format "html"</th>
+                                </tr>
+                                <tr>
+                                    <td><b>Negrita</b></td>
+                                    <td><code>*texto*</code></td>
+                                    <td>
+                                        <code>&lt;b&gt;texto&lt;/b&gt;</code>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><i>Cursiva</i></td>
+                                    <td><code>_texto_</code></td>
+                                    <td>
+                                        <code>&lt;i&gt;texto&lt;/i&gt;</code>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><s>Tachado</s></td>
+                                    <td><code>~texto~</code></td>
+                                    <td>
+                                        <code>&lt;s&gt;texto&lt;/s&gt;</code>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><u>Subrayado*</u></td>
+                                    <td>—</td>
+                                    <td>
+                                        <code>&lt;u&gt;texto&lt;/u&gt;</code>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>Monoespaciado</code></td>
+                                    <td><code>```texto```</code></td>
+                                    <td>
+                                        <code
+                                            >&lt;pre&gt;texto&lt;/pre&gt;</code
+                                        >
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Código</td>
+                                    <td><code>`texto`</code></td>
+                                    <td>
+                                        <code
+                                            >&lt;code&gt;texto&lt;/code&gt;</code
+                                        >
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Cita</td>
+                                    <td><code>&gt; texto</code></td>
+                                    <td><code>&lt;blockquote&gt;</code></td>
+                                </tr>
+                                <tr>
+                                    <td>Lista</td>
+                                    <td>
+                                        <code>- item</code> /
+                                        <code>1. item</code>
+                                    </td>
+                                    <td>
+                                        <code>&lt;ul&gt;&lt;li&gt;</code> /
+                                        <code>&lt;ol&gt;</code>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Salto de línea</td>
+                                    <td><code>\n</code></td>
+                                    <td>
+                                        <code>&lt;br&gt;</code> /
+                                        <code>&lt;p&gt;</code>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Emoji</td>
+                                    <td colspan="2">
+                                        Directo: 🎉 ✅ 👋 (o
+                                        <code>&amp;#127881;</code> en HTML)
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <p class="muted">
+                            * WhatsApp no tiene subrayado: se simula con un
+                            carácter Unicode debajo de cada letra.
+                        </p>
+                    </details>
                     <label>
                         PDF <span class="muted" id="pdf-limit">(opcional)</span>
                         <input
@@ -405,12 +538,22 @@
 
             <!-- API -->
             <section class="card" id="api">
-                <h2>API</h2>
+                <h2>Clave de la API</h2>
+                <p class="muted">
+                    Cópiala en <code>WHATSAPP_TOKEN</code> del
+                    <code>.env</code> de Laravel.
+                </p>
                 <div class="row">
                     <input id="token" type="password" readonly />
                     <button id="btn-token-show">Mostrar</button>
                     <button id="btn-token-copy">Copiar</button>
+                    <button class="danger" id="btn-token-rotate">
+                        Regenerar
+                    </button>
                 </div>
+                <p class="muted" id="token-env" hidden>
+                    Definida con <code>API_TOKEN</code> en el .env del servidor.
+                </p>
                 <pre><code id="curl"></code></pre>
             </section>
         </main>
@@ -574,13 +717,15 @@
 
                 $('pdf-limit').textContent =
                     `(opcional, máx. ${s.config.maxPdfMb} MB)`;
+                $('btn-token-rotate').hidden = s.tokenFromEnv;
+                $('token-env').hidden = !s.tokenFromEnv;
                 if ($('token').value !== s.token) {
                     $('token').value = s.token;
                     $('curl').textContent = [
                         `curl -X POST http://localhost:${s.config.apiPort}/v1/messages \\`,
                         `  -H "Authorization: Bearer $API_TOKEN" \\`,
                         `  -H "Content-Type: application/json" \\`,
-                        `  -d '{"to":"51961991613","text":"Hola","pdf":{"url":"https://…/factura.pdf","filename":"factura.pdf"}}'`,
+                        `  -d '{"to":"51961991613","text":"Hola *Ana* 👋\\nTu pedido está _listo_ ✅"}'`,
                     ].join('\n');
                 }
                 tick();
@@ -634,6 +779,16 @@
                 );
             });
 
+            $('btn-token-rotate').addEventListener('click', (e) => {
+                if (
+                    confirm(
+                        '¿Generar una clave nueva? La actual dejará de funcionar y tendrás que actualizar Laravel.',
+                    )
+                ) {
+                    action(e.currentTarget, () => post('/token/rotate'));
+                }
+            });
+
             $('test-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const out = $('test-result');
@@ -646,6 +801,7 @@
                     const body = {
                         to: $('test-to').value,
                         text: $('test-text').value,
+                        format: $('test-format').value,
                     };
                     const file = $('test-pdf').files[0];
                     if (file) {

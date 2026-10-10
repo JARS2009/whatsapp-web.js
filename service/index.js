@@ -7,10 +7,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 const { WhatsAppService, log } = require('./whatsapp');
 const { createApiServer } = require('./api');
 const { createPanelServer } = require('./panel');
+const { ApiKey } = require('./token');
 
 const env = process.env;
 const config = {
@@ -28,32 +28,20 @@ const config = {
         : 24,
     memoryLimitMb: Number(env.MEMORY_LIMIT_MB) || null,
     memoryCheckMinutes: Number(env.MEMORY_CHECK_MINUTES) || 5,
+    sendDelayMs: env.SEND_DELAY_MS ? Number(env.SEND_DELAY_MS) : 1000,
 };
 
 fs.mkdirSync(config.dataDir, { recursive: true });
 
-/** Usa API_TOKEN o genera uno y lo guarda en el volumen de datos */
-function loadToken() {
-    if (env.API_TOKEN) return env.API_TOKEN;
-    const file = path.join(config.dataDir, 'api-token');
-    try {
-        return fs.readFileSync(file, 'utf8').trim();
-    } catch {
-        const token = crypto.randomBytes(24).toString('base64url');
-        fs.writeFileSync(file, token, { mode: 0o600 });
-        log('[service] token de API generado en', file);
-        return token;
-    }
-}
-
-const token = loadToken();
+// API_TOKEN del entorno, o una clave generada y guardada en el volumen
+const apiKey = new ApiKey(config.dataDir, env.API_TOKEN);
 const wa = new WhatsAppService(config);
 
-const api = createApiServer(wa, { token, maxPdfBytes: config.maxPdfBytes });
+const api = createApiServer(wa, { apiKey, maxPdfBytes: config.maxPdfBytes });
 const panel = createPanelServer(wa, {
     user: config.panelUser,
     password: config.panelPassword,
-    token,
+    apiKey,
     maxPdfBytes: config.maxPdfBytes,
 });
 

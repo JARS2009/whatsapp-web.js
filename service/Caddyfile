@@ -1,0 +1,19 @@
+# Proxy HTTPS opcional para llamar a la API desde otro servidor.
+# Se activa con: docker compose --profile https up -d
+# Certificado automático (Let's Encrypt) para DOMAIN. El panel NO se publica.
+{$DOMAIN} {
+	# Solo las IPs permitidas (p. ej. la de tu servidor Laravel)
+	@denied not remote_ip {$ALLOWED_IPS}
+	respond @denied 403
+
+	request_body {
+		max_size 32MB
+	}
+
+	@api path /v1/* /health
+	handle @api {
+		reverse_proxy whatsapp:3000
+	}
+
+	respond 404
+}

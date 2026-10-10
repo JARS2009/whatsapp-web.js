@@ -14,6 +14,8 @@ services:
             PANEL_PASSWORD: ${PANEL_PASSWORD:-}
             MAX_PDF_MB: ${MAX_PDF_MB:-16}
             RESTART_EVERY_HOURS: ${RESTART_EVERY_HOURS:-24}
+            # Pausa mínima entre envíos (ms), para no parecer spam
+            SEND_DELAY_MS: ${SEND_DELAY_MS:-1000}
         ports:
             # Ambos solo en localhost del VPS: nada queda expuesto a internet.
             # API: para tus apps del mismo servidor (o detrás de un proxy con HTTPS)
@@ -31,5 +33,31 @@ services:
                 max-size: 10m
                 max-file: '3'
 
+    # Opcional: HTTPS para llamar a la API desde otro servidor.
+    # Activar con: docker compose --profile https up -d
+    caddy:
+        image: caddy:2.8.4-alpine
+        profiles: ['https']
+        restart: unless-stopped
+        depends_on:
+            - whatsapp
+        environment:
+            DOMAIN: ${DOMAIN:-}
+            # IPs que pueden llamar a la API, separadas por espacio
+            ALLOWED_IPS: ${ALLOWED_IPS:-0.0.0.0/0 ::/0}
+        ports:
+            - '80:80'
+            - '443:443'
+        volumes:
+            - ./service/Caddyfile:/etc/caddy/Caddyfile:ro
+            - caddy-data:/data
+        mem_limit: 64m
+        logging:
+            driver: json-file
+            options:
+                max-size: 10m
+                max-file: '3'
+
 volumes:
     whatsapp-data:
+    caddy-data:

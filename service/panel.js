@@ -14,7 +14,7 @@ const { sendJson, readJson, safeEqual, handle } = require('./http');
 
 const PANEL_HTML = path.join(__dirname, 'panel.html');
 
-function createPanelServer(wa, { user, password, token, maxPdfBytes }) {
+function createPanelServer(wa, { user, password, apiKey, maxPdfBytes }) {
     const clients = new Set();
 
     async function info() {
@@ -27,7 +27,8 @@ function createPanelServer(wa, { user, password, token, maxPdfBytes }) {
                 apiPort: wa.config.apiPort,
                 maxPdfMb: Math.round(maxPdfBytes / 1048576),
             },
-            token,
+            token: apiKey.value,
+            tokenFromEnv: apiKey.fromEnv,
         };
     }
 
@@ -113,6 +114,16 @@ function createPanelServer(wa, { user, password, token, maxPdfBytes }) {
                     }
                     return sendJson(res, 200, { ok: true });
 
+                case 'POST /token/rotate':
+                    try {
+                        apiKey.rotate();
+                    } catch (err) {
+                        throw new HttpError(409, err.message);
+                    }
+                    log('[panel] clave de API regenerada');
+                    push();
+                    return sendJson(res, 200, { ok: true });
+
                 case 'POST /logout':
                     await wa.logout();
                     log('[panel] sesión cerrada desde el panel');
@@ -139,7 +150,12 @@ function createPanelServer(wa, { user, password, token, maxPdfBytes }) {
                     return sendJson(
                         res,
                         200,
-                        await wa.send({ to: body.to, text: body.text, pdf }),
+                        await wa.send({
+                            to: body.to,
+                            text: body.text,
+                            format: body.format,
+                            pdf,
+                        }),
                     );
                 }
 

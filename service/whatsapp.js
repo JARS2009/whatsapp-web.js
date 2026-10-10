@@ -15,6 +15,7 @@ const path = require('path');
 const { EventEmitter } = require('events');
 const QRCode = require('qrcode');
 const { Client, LocalAuth, MessageMedia } = require('..');
+const { formatMessage } = require('./format');
 
 const CLIENT_ID = 'main';
 
@@ -44,6 +45,29 @@ const CHROME_ARGS = [
     '--disk-cache-size=33554432',
 ];
 
+// Puentes página → Node que la librería usa para mensajes entrantes, chats,
+// llamadas, etc. Este servicio solo envía: se anulan para que WhatsApp Web no
+// serialice ni mande a Node cada mensaje que llega. Se deja
+// onAppStateChangedEvent, que es el que avisa de desconexiones.
+const INCOMING_BRIDGES = [
+    'onAddMessageEvent',
+    'onAddMessageCiphertextEvent',
+    'onCiphertextFailedEvent',
+    'onChangeMessageEvent',
+    'onChangeMessageTypeEvent',
+    'onEditMessageEvent',
+    'onRemoveMessageEvent',
+    'onMessageAckEvent',
+    'onMessageMediaUploadedEvent',
+    'onChatUnreadCountEvent',
+    'onArchiveChatEvent',
+    'onRemoveChatEvent',
+    'onPollVoteEvent',
+    'onReaction',
+    'onIncomingCall',
+    'onBatteryStateChangedEvent',
+];
+
 // Estados de desconexión tras los que la sesión ya no sirve
 const UNLINKED_REASONS = ['LOGOUT', 'UNPAIRED', 'UNPAIRED_IDLE'];
 
@@ -53,6 +77,8 @@ class HttpError extends Error {
         this.status = status;
     }
 }
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function log(...args) {
     console.log(new Date().toISOString(), ...args);
@@ -306,6 +332,21 @@ class WhatsAppService extends EventEmitter {
         this.saveMeta();
         this.setStatus('ready', { readySince: now, lastError: null });
         this.scheduleMaintenance();
+        this.muteIncoming(c);
+    }
+
+    /** Modo solo envío: ignora todo lo que llega (mensajes, chats, llamadas) */
+    async muteIncoming(c) {
+        try {
+            await c.pupPage.evaluate((names) => {
+                for (const name of names) {
+                    if (typeof window[name] === 'function')
+                        window[name] = () => {};
+                }
+            }, INCOMING_BRIDGES);
+        } catch (err) {
+            log('[wa] no se pudo activar el modo solo envío:', err.message);
+        }
     }
 
     onDisconnected(reason) {
@@ -467,7 +508,13 @@ class WhatsAppService extends EventEmitter {
         this.emit('change');
         const run = this.queue.then(async () => {
             await this.waitReady();
-            return job(this.client);
+            try {
+                return await job(this.client);
+            } finally {
+                // Pausa entre envíos: ráfagas de mensajes elevan el riesgo de bloqueo
+                const delay = this.config.sendDelayMs;
+                if (delay > 0) await sleep(delay + Math.random() * delay * 0.5);
+            }
         });
         this.queue = run.catch(() => {});
         return run.finally(() => {
@@ -498,11 +545,16 @@ class WhatsAppService extends EventEmitter {
     }
 
     /**
-     * Envía texto y/o un PDF.
-     * @param {{to: string, text?: string, pdf?: {data: Buffer, filename: string}}} msg
+     * Envía texto (con formato) y/o un PDF.
+     * @param {{to: string, text?: string, format?: 'whatsapp'|'html', pdf?: {data: Buffer, filename: string}}} msg
      */
-    send({ to, text, pdf }) {
-        const body = typeof text === 'string' ? text.trim() : '';
+    send({ to, text, format, pdf }) {
+        let body;
+        try {
+            body = formatMessage(text, format || 'whatsapp');
+        } catch (err) {
+            return Promise.reject(new HttpError(400, err.message));
+        }
         if (!body && !pdf) {
             return Promise.reject(new HttpError(400, 'Falta "text" o "pdf"'));
         }
